@@ -25,26 +25,33 @@ export default function Profile() {
     setPhone(user?.phone || "");
   }, [user]);
 
-  if (!user) return <div className="container card">Please login first.</div>;
+  if (!user) {
+    return <div className="container card">Please login first.</div>;
+  }
 
-  // Request OTP (email only)
+  /* ================== REQUEST OTP (EMAIL ONLY) ================== */
   async function requestVerify(type, target) {
     setErr("");
     setMsg("");
 
     if (!target) return setErr("Field cannot be empty.");
 
-    if (type === "email" && !target.includes("@"))
+    if (type === "email" && !target.includes("@")) {
       return setErr("Enter a valid email.");
+    }
 
     setLoading(true);
 
     try {
-      const res = await axios.post(API + "/api/auth/request-verify", {
-        userId: user.id,
-        type,
-        target,
-      });
+      await axios.post(
+        API + "/api/auth/request-verify",
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
 
       if (type === "email") {
         setOtpStep("email");
@@ -52,7 +59,6 @@ export default function Profile() {
       }
 
       if (type === "phone") {
-        // Phone updates instantly
         login({ ...user, phone: target }, token);
         setMsg("Phone updated!");
       }
@@ -63,25 +69,31 @@ export default function Profile() {
     setLoading(false);
   }
 
-  // Verify OTP for email
+  /* ================== VERIFY OTP ================== */
   async function verify() {
     setErr("");
     setMsg("");
 
-    if (otp.length !== 6) return setErr("OTP must be 6 digits.");
+    if (otp.length !== 6) {
+      return setErr("OTP must be 6 digits.");
+    }
 
     setLoading(true);
 
     try {
-      await axios.post(API + "/api/auth/verify-change", {
-        userId: user.id,
-        type: otpStep,
-        target: email,
-        code: otp,
-      });
+      await axios.post(
+        API + "/api/auth/verify-otp",
+        { code: otp },
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
 
-      setMsg("Email updated!");
+      setMsg("Email verified successfully!");
       setOtpStep(null);
+      setOtp("");
 
       login(
         {
@@ -137,20 +149,18 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* PHONE (STRONG – NO OTP) */}
+        {/* PHONE */}
         <p style={{ marginTop: 12 }}>
           <strong>Phone:</strong>
         </p>
         <input
           value={phone}
-          onChange={(e) => {
-            setPhone(e.target.value);
-            requestVerify("phone", e.target.value); // instant update
-          }}
+          onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => requestVerify("phone", phone)}
           placeholder="Phone number"
         />
 
-        {/* OTP BOX (EMAIL ONLY) */}
+        {/* OTP BOX */}
         {otpStep === "email" && (
           <div
             className="otp-box"

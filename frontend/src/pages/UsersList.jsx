@@ -1,4 +1,3 @@
-// src/pages/UsersList.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../components/AuthContext";
@@ -31,16 +30,30 @@ export default function UsersList() {
   }
 
   async function verifyUser(id) {
-    try {
-      await axios.post(
-        API + "/api/admin/verify-user",
-        { id }, // ✅ FIXED
-        { headers: { Authorization: "Bearer " + token } }
-      );
-      loadUsers();
-    } catch {
-      alert("Verification failed");
-    }
+    await axios.post(
+      API + "/api/admin/verify-user",
+      { id },
+      { headers: { Authorization: "Bearer " + token } }
+    );
+    loadUsers();
+  }
+
+  async function changeRole(id, role) {
+    await axios.post(
+      API + "/api/admin/change-role",
+      { id, role },
+      { headers: { Authorization: "Bearer " + token } }
+    );
+    loadUsers();
+  }
+
+  async function toggleBan(id, banned) {
+    await axios.post(
+      API + "/api/admin/toggle-ban",
+      { id, banned },
+      { headers: { Authorization: "Bearer " + token } }
+    );
+    loadUsers();
   }
 
   const filtered = users.filter(
@@ -74,26 +87,59 @@ export default function UsersList() {
             <th>Email</th>
             <th>Role</th>
             <th>Verified</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
-          {filtered.map((u) => (
-            <tr key={u._id}>
-              <td>{u.name}</td>
-              <td>{u.email}</td>
-              <td>{u.role}</td>
-              <td>{u.emailVerified ? "✔" : "❌"}</td>
-              <td>
-                {!u.emailVerified && (
-                  <button onClick={() => verifyUser(u._id)}>
-                    Verify
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
+          {filtered.map((u) => {
+            const isSelf = u._id === user.id;
+            const noAction = isSelf || u.role === "top-admin";
+
+            return (
+              <tr key={u._id}>
+                <td>{u.name}</td>
+                <td>{u.email}</td>
+                <td>{u.role}</td>
+                <td>{u.emailVerified ? "✔" : "❌"}</td>
+                <td>{u.banned ? "Banned" : "Active"}</td>
+
+                <td>
+                  {noAction ? (
+                    <span style={{ opacity: 0.6 }}>No action available</span>
+                  ) : (
+                    <>
+                      {!u.emailVerified && (
+                        <button onClick={() => verifyUser(u._id)}>
+                          Verify
+                        </button>
+                      )}
+
+                      {u.role === "user" && (
+                        <button onClick={() => changeRole(u._id, "admin")}>
+                          Promote
+                        </button>
+                      )}
+
+                      {u.role === "admin" && (
+                        <button onClick={() => changeRole(u._id, "user")}>
+                          Demote
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => toggleBan(u._id, !u.banned)}
+                        style={{ marginLeft: 6 }}
+                      >
+                        {u.banned ? "Unban" : "Ban"}
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

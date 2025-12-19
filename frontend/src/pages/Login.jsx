@@ -100,9 +100,6 @@ export default function Login() {
             fontSize: 14,
           }}
         >
-          <a href="/forgot" style={{ color: "#8b5a2b" }}>
-            Forgot password?
-          </a>
         </div>
       </div>
     </div>

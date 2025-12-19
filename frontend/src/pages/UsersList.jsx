@@ -30,11 +30,11 @@ export default function UsersList() {
     }
   }
 
-  async function verifyUser(userId) {
+  async function verifyUser(id) {
     try {
       await axios.post(
         API + "/api/admin/verify-user",
-        { userId },
+        { id }, // ✅ FIXED
         { headers: { Authorization: "Bearer " + token } }
       );
       loadUsers();
@@ -67,7 +67,7 @@ export default function UsersList() {
         style={{ padding: 10, marginBottom: 20, width: 300 }}
       />
 
-      <table width="100%">
+      <table width="100%" border="1" cellPadding="8">
         <thead>
           <tr>
             <th>Name</th>
@@ -87,13 +87,19 @@ export default function UsersList() {
               <td>{u.emailVerified ? "✔" : "❌"}</td>
               <td>
                 {!u.emailVerified && (
-                  <button onClick={() => verifyUser(u._id)}>Verify</button>
+                  <button onClick={() => verifyUser(u._id)}>
+                    Verify
+                  </button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {filtered.length === 0 && (
+        <p style={{ marginTop: 20, opacity: 0.6 }}>No users found.</p>
+      )}
     </div>
   );
 }

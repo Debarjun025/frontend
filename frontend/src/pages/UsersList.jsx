@@ -1,3 +1,4 @@
+// src/pages/UsersList.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../components/AuthContext";
@@ -29,123 +30,138 @@ export default function UsersList() {
     }
   }
 
-  async function verifyUser(id) {
-    await axios.post(
-      API + "/api/admin/verify-user",
-      { id },
-      { headers: { Authorization: "Bearer " + token } }
-    );
-    loadUsers();
+  async function verifyEmail(id) {
+    try {
+      await axios.post(
+        API + "/api/admin/verify-user",
+        { id },
+        { headers: { Authorization: "Bearer " + token } }
+      );
+      loadUsers();
+    } catch {
+      alert("Email verification failed");
+    }
   }
 
-  async function changeRole(id, role) {
-    await axios.post(
-      API + "/api/admin/change-role",
-      { id, role },
-      { headers: { Authorization: "Bearer " + token } }
-    );
-    loadUsers();
-  }
-
-  async function toggleBan(id, banned) {
-    await axios.post(
-      API + "/api/admin/toggle-ban",
-      { id, banned },
-      { headers: { Authorization: "Bearer " + token } }
-    );
-    loadUsers();
+  async function verifyPhone(id) {
+    try {
+      await axios.post(
+        API + "/api/admin/verify-phone",
+        { id },
+        { headers: { Authorization: "Bearer " + token } }
+      );
+      loadUsers();
+    } catch {
+      alert("Phone verification failed");
+    }
   }
 
   const filtered = users.filter(
     (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (err)
+  if (err) {
     return (
       <div className="container">
         <div className="error">{err}</div>
       </div>
     );
+  }
 
   return (
     <div className="container">
-      <h2 style={{ color: "#3b2311" }}>All Registered Users</h2>
+      <h2 style={{ color: "#3b2311", marginBottom: 20 }}>
+        All Registered Users (Top Admin)
+      </h2>
 
       <input
-        placeholder="Search users..."
+        placeholder="Search by name or email..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ padding: 10, marginBottom: 20, width: 300 }}
+        style={{
+          padding: 10,
+          width: "100%",
+          maxWidth: 400,
+          marginBottom: 20,
+        }}
       />
 
-      <table width="100%" border="1" cellPadding="8">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Verified</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+      <div className="card" style={{ overflowX: "auto" }}>
+        <table width="100%" cellPadding="8" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#d1a05f", color: "#fff" }}>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Email Verified</th>
+              <th>Phone</th>
+              <th>Phone Verified</th>
+              <th>Action</th>
+            </tr>
+          </thead>
 
-        <tbody>
-          {filtered.map((u) => {
-            const isSelf = u._id === user.id;
-            const noAction = isSelf || u.role === "top-admin";
+          <tbody>
+            {filtered.map((u) => {
+              const isSelf = u._id === user.id;
 
-            return (
-              <tr key={u._id}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>{u.emailVerified ? "✔" : "❌"}</td>
-                <td>{u.banned ? "Banned" : "Active"}</td>
+              return (
+                <tr key={u._id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>{u.role}</td>
+                  <td>{u.emailVerified ? "✔" : "❌"}</td>
+                  <td>
+                    {u.phone
+                      ? `${u.countryCode || ""} ${u.phone}`
+                      : "-"}
+                  </td>
+                  <td>{u.phoneVerified ? "✔" : "❌"}</td>
 
-                <td>
-                  {noAction ? (
-                    <span style={{ opacity: 0.6 }}>No action available</span>
-                  ) : (
-                    <>
-                      {!u.emailVerified && (
-                        <button onClick={() => verifyUser(u._id)}>
-                          Verify
-                        </button>
-                      )}
+                  <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {isSelf ? (
+                      <span style={{ opacity: 0.6 }}>No action available</span>
+                    ) : (
+                      <>
+                        {!u.emailVerified && (
+                          <button
+                            className="mini-btn"
+                            onClick={() => verifyEmail(u._id)}
+                          >
+                            Verify Email
+                          </button>
+                        )}
 
-                      {u.role === "user" && (
-                        <button onClick={() => changeRole(u._id, "admin")}>
-                          Promote
-                        </button>
-                      )}
+                        {!u.phoneVerified && u.phone && (
+                          <button
+                            className="mini-btn"
+                            onClick={() => verifyPhone(u._id)}
+                          >
+                            Verify Phone
+                          </button>
+                        )}
 
-                      {u.role === "admin" && (
-                        <button onClick={() => changeRole(u._id, "user")}>
-                          Demote
-                        </button>
-                      )}
+                        {u.emailVerified && (!u.phone || u.phoneVerified) && (
+                          <span style={{ opacity: 0.6 }}>
+                            No action available
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-                      <button
-                        onClick={() => toggleBan(u._id, !u.banned)}
-                        style={{ marginLeft: 6 }}
-                      >
-                        {u.banned ? "Unban" : "Ban"}
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {filtered.length === 0 && (
-        <p style={{ marginTop: 20, opacity: 0.6 }}>No users found.</p>
-      )}
+        {filtered.length === 0 && (
+          <p style={{ marginTop: 20, opacity: 0.6, textAlign: "center" }}>
+            No users found.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
